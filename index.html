@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="減煙">
+<meta name="theme-color" content="#f3efe6">
+<title>減煙サポート</title>
+<style>
+:root{--bg:#f3efe6;--card:#fffdf8;--ink:#23262b;--sub:#767a80;--acc:#e8643a;--ok:#2c8a64;--blue:#3d6fb4;--line:#e3dccd}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1e22;--card:#272a30;--ink:#f1eee8;--sub:#a3a7ad;--line:#3a3e45}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:520px;margin:0 auto;padding:14px 14px 40px}
+h1{font-size:18px;margin:4px 2px 10px}h2{font-size:17px;margin:0 0 8px}h3{font-size:16px;margin:14px 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.hero{text-align:center;padding:18px 10px}
+.big{font-size:76px;font-weight:800;line-height:1;letter-spacing:-2px}
+.big small{font-size:28px;color:var(--sub);font-weight:600;letter-spacing:0}
+.sub{color:var(--sub);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.grid .card{margin:0;padding:10px 6px;text-align:center}
+.grid b{display:block;font-size:22px}.grid span{font-size:12px;color:var(--sub)}
+button{font:inherit;border:0;border-radius:14px;padding:14px;color:#fff;background:var(--ink);width:100%;min-height:52px;font-weight:700}
+button:active{transform:scale(.98)}
+.smoke{background:var(--acc);font-size:22px;min-height:84px;margin-bottom:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.row button{min-height:64px}
+.ok{background:var(--ok)}.blue{background:var(--blue)}
+.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.link{background:none;color:var(--sub);font-weight:500;min-height:40px;text-decoration:underline}
+.opts{display:grid;gap:8px}.opt{background:var(--bg);color:var(--ink);border:2px solid var(--line);text-align:left}
+.opt.on{border-color:var(--acc);background:var(--card)}
+.msg{font-size:19px;font-weight:700;line-height:1.5;margin:4px 0 12px}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:9}
+#ov.on{display:flex}
+.sheet{background:var(--card);width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}
+.sheet button{margin-top:8px}
+#toast{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));max-width:496px;margin:0 auto;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 14px;display:none;align-items:center;justify-content:space-between;gap:10px;z-index:10}
+#toast.on{display:flex}#toast button{width:auto;min-height:36px;padding:6px 14px;background:var(--acc);color:#fff}
+.warn{background:#fff1d6;color:#5a3b00;border-radius:10px;padding:10px;font-size:14px;margin-bottom:12px}
+.bars{display:flex;align-items:flex-end;gap:6px;height:130px;margin:8px 0 4px}
+.bars div{flex:1;text-align:center;font-size:12px}
+.bars i{display:block;border-radius:6px 6px 0 0;background:var(--acc);min-height:3px;margin-top:2px}
+.bars i.g{background:var(--ok)}.bars i.none{background:transparent;border:2px dashed var(--line);height:20px!important}
+.hb{display:flex;align-items:center;gap:8px;font-size:14px;margin:4px 0}.hb span{width:92px}.hb i{height:12px;background:var(--blue);border-radius:6px;display:block}
+label{display:block;font-size:14px;color:var(--sub);margin:10px 0 4px}
+input[type=number],input[type=text]{font:inherit;width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.rw{display:grid;grid-template-columns:96px 1fr 44px;gap:6px;margin-bottom:6px}.rw button{padding:0;min-height:44px;background:var(--line);color:var(--ink)}
+.li{display:flex;justify-content:space-between;align-items:center;font-size:14px;border-bottom:1px solid var(--line);padding:6px 0}
+.li button{width:auto;min-height:32px;padding:2px 10px;background:var(--line);color:var(--ink);font-size:13px}
+.hide{display:none}
+</style></head><body><div class="wrap">
+<div id="banner"></div><div id="main"></div><div id="ana" class="hide"></div><div id="set" class="hide"></div></div>
+<div id="ov"><div class="sheet" id="sheet"></div></div><div id="toast"><span id="tmsg"></span><button id="tund">元に戻す</button></div>
+<script>
+const KEY='genen_v1',$=s=>document.querySelector(s),pad=n=>String(n).padStart(2,'0');
+const dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>dstr(new Date());
+const addDays=(s,n)=>{const [y,m,d]=s.split('-').map(Number);return dstr(new Date(y,m-1,d+n))};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const yen=n=>'¥'+Math.round(n).toLocaleString('ja-JP');
+const Z='0000-00-00',HK=['baseline','goal','price','size'];
+let S,saveErr=false,loadMsg='',view='main',lock=0,lastDay=today(),curMsg='',lastMsg='',pending=null,tmr=null,tundId=null,tt=null;
+
+const MSG=['今日の1本目はランニングの後にした方が美味しいぞぉ🤤','我慢した後のタバコは美味すぎるぞぉ😆','おっと、その休憩、タバコなしでも成立するんじゃない？😏','5分待ってみな。吸うかどうかは、そのあと決めればいい😆','我慢大会じゃないぞ。自分で選べる男になるんだ😎','本当に吸いたい？ それとも休憩時間だから？🤔','吸ってもいい。ちょっと考えてから吸うのもいい😗','深呼吸を1回。それでも吸いたければ、それが答えだ😌','水かお茶を一口飲んでから決めても遅くないぞ🍵','今の「吸いたい」は、ほんとにお前の意見か？😏','手が勝手にポケットに向かってないか？ 見張ってるぞ👀','ストレッチ30秒。その後の1本は、また別の味だぞ😆','どっちを選んでも、選んだのはお前だ。それでいい😎','次の1本、もうちょい先でも誰も困らないぞぉ😉'];
+const RUN=['走った後の1本目は格別だぞ。走る前に吸うのはもったいない🏃','今日走るなら、1本目はランニング後のご褒美にどうだ？🤤','ランニング帰りの一服まで取っておく手もあるぞぉ😆'];
+const rmsg=()=>{let m,p;do{p=Math.random()<.2?RUN:MSG;m=p[Math.floor(Math.random()*p.length)]}while(m===lastMsg);return lastMsg=m};
+
+function def(){const h={};[['baseline',15],['goal',15],['price',600],['size',20]].forEach(([k,v])=>h[k]=[{from:Z,val:v}]);
+ return{v:1,created:new Date().toISOString(),setup:false,lastBackup:null,logs:[],hist:h,rewards:[{id:uid(),amt:30000,text:'新しいランニングシューズが買える！'},{id:uid(),amt:100000,text:'好きな服を買っていい！'},{id:uid(),amt:500000,text:'スーパーカブを買うぞ！'}]}}
+function clean(d){try{if(!d||!Array.isArray(d.logs)||!d.hist||!Array.isArray(d.rewards))return null;
+ const h={};for(const k of HK){const a=d.hist[k];if(!Array.isArray(a)||!a.length)return null;
+  h[k]=a.map(e=>({from:String(e.from),val:Number(e.val)})).sort((x,y)=>x.from<y.from?-1:1);
+  if(h[k].some(e=>!isFinite(e.val)||!/^(\d{4}-\d{2}-\d{2})$/.test(e.from)))return null}
+ const logs=d.logs.filter(l=>l&&/^\d{4}-\d{2}-\d{2}$/.test(l.d)&&['s','n','z'].includes(l.k)).map(l=>({id:String(l.id||uid()),d:l.d,h:Math.min(23,Math.max(0,+l.h||0)),t:String(l.t||'00:00').slice(0,5),k:l.k,w:l.w?1:0,sat:[1,2,3].includes(l.sat)?l.sat:null,mind:[1,2,3].includes(l.mind)?l.mind:null}));
+ const rewards=d.rewards.filter(r=>r&&isFinite(+r.amt)).map(r=>({id:String(r.id||uid()),amt:Math.max(0,+r.amt),text:String(r.text||'').slice(0,60)}));
+ return{v:1,created:String(d.created||new Date().toISOString()),setup:!!d.setup,lastBackup:d.lastBackup||null,logs,hist:h,rewards}}catch(e){return null}}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const c=clean(JSON.parse(r));if(c)return c;
+  try{localStorage.setItem(KEY+'_corrupt',r)}catch(e){}loadMsg='保存データを読み込めませんでした。壊れたデータは別枠に退避してあり、消していません。'}}
+ catch(e){loadMsg='この端末の保存領域を読み込めませんでした（プライベートブラウズ等の可能性）。'}return def()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));saveErr=false}catch(e){saveErr=true}banner()}
+function val(k,d){let v=S.hist[k][0].val;for(const e of S.hist[k]){if(e.from<=d)v=e.val;else break}return v}
+function setHist(k,v){const a=S.hist[k];if(val(k,today())===v)return;const t=today(),e=a.find(x=>x.from===t);if(e)e.val=v;else a.push({from:t,val:v});a.sort((x,y)=>x.from<y.from?-1:1)}
+function byDay(){const m={};for(const l of S.logs){const o=m[l.d]||(m[l.d]={s:0,n:0,z:0,w:0});o[l.k]++;if(l.k==='s'&&l.w)o.w++}return m}
+const sv=(d,o)=>o?Math.max(0,val('baseline',d)-o.s)*val('price',d)/val('size',d):0;
+const totalSv=D=>Object.keys(D).reduce((a,d)=>a+sv(d,D[d]),0);
+
+function banner(){let h='';if(saveErr)h+='<div class="warn">⚠️ 保存に失敗しました。この端末では記録が残らない可能性があります（プライベートブラウズ？）。通常のSafariタブで開き、設定画面からバックアップを取ってください。</div>';
+ if(loadMsg)h+='<div class="warn">⚠️ '+esc(loadMsg)+'</div>';
+ if(S&&S.logs.length>0&&(!S.lastBackup||(Date.now()-new Date(S.lastBackup))>7*864e5))h+='<div class="warn">💾 しばらくバックアップしていません。設定画面の「JSONバックアップ」で保存しておくと安心です。</div>';
+ $('#banner').innerHTML=h}
+
+function go(v){view=v;['main','ana','set'].forEach(x=>$('#'+x).classList.toggle('hide',x!==v));render();scrollTo(0,0)}
+function render(){banner();lastDay=today();if(view==='main')rMain();else if(view==='ana')rAna();else rSet()}
+
+function week(D){let s=0,n=0;for(let i=0;i<7;i++){const o=D[addDays(today(),-i)];if(o){s+=o.s;n++}}return{n,avg:n?s/n:null}}
+function rMain(){const t=today(),D=byDay(),o=D[t]||{s:0,n:0,z:0},g=val('goal',t),rem=g-o.s,w=week(D),tot=totalSv(D);
+ const next=S.rewards.filter(r=>r.amt>tot).sort((a,b)=>a.amt-b.amt)[0];
+ $('#main').innerHTML=`<h1>🚬 減煙サポート　<span class="sub">${t}</span></h1>
+ <div class="card hero"><div class="sub">今日吸った本数</div><div class="big">${o.s}<small> / ${g}本</small></div>
+ <div class="sub" style="margin-top:8px">${rem>=0?'目標まであと '+rem+' 本':'目標より '+(-rem)+' 本多め（気にしない気にしない）'}</div></div>
+ <div class="grid"><div class="card"><b>${yen(sv(t,o))}</b><span>今日の推定節約</span></div>
+ <div class="card"><b>${w.avg===null?'—':w.avg.toFixed(1)}</b><span>週平均（${w.n}日分）</span></div>
+ <div class="card"><b>${o.n}回</b><span>タバコなし休憩</span></div></div>
+ <button class="smoke" onclick="smoke(0)">タバコを吸った</button>
+ <div class="row"><button class="ok" onclick="nosmoke()">タバコなしで休憩</button><button class="blue" onclick="waitSheet()">吸う前にちょっと待つ</button></div>
+ <div class="row"><button class="ghost" onclick="go('ana')">記録・分析を見る</button><button class="ghost" onclick="go('set')">設定</button></div>
+ ${(!D[t])?'<button class="link" onclick="zero()">今日はまだ記録なし。「0本」として記録する</button>':''}
+ <div class="card sub" style="margin-top:6px">推定節約額の累計：<b style="color:var(--ink)">${yen(tot)}</b>（実際に貯めた金額ではありません）${next?'<br>次のご褒美「'+esc(next.text)+'」まで '+yen(next.amt-tot):''}</div>`;
+ if(!S.setup)setupSheet()}
+
+function gate(){const n=Date.now();if(n-lock<900)return false;lock=n;return true}
+function add(k,w){const n=new Date(),l={id:uid(),d:dstr(n),h:n.getHours(),t:pad(n.getHours())+':'+pad(n.getMinutes()),k,w:w?1:0,sat:null,mind:null};S.logs.push(l);save();render();return l.id}
+function smoke(w){if(!gate())return;const id=add('s',w);curMsg=rmsg();reflect(id,true)}
+function nosmoke(){if(!gate())return;toast('タバコなし休憩を記録しました',add('n'))}
+function zero(){if(!gate())return;toast('今日を0本として記録しました',add('z'))}
+function undo(id){S.logs=S.logs.filter(l=>l.id!==id);save();closeSheet();hideToast();render()}
+function toast(m,id){$('#tmsg').textContent=m;tundId=id;$('#toast').classList.add('on');clearTimeout(tt);tt=setTimeout(hideToast,6000)}
+function hideToast(){$('#toast').classList.remove('on')}
+$('#tund').onclick=()=>{if(tundId)undo(tundId)};
+
+function openSheet(h){$('#sheet').innerHTML=h;$('#ov').classList.add('on')}
+function closeSheet(){$('#ov').classList.remove('on');clearInterval(tmr);pending=null;render()}
+$('#ov').onclick=e=>{if(e.target.id==='ov')closeSheet()};
+function reflect(id,keep){const l=S.logs.find(x=>x.id===id);if(!l)return closeSheet();if(!keep)curMsg=curMsg||rmsg();
+ const q=(f,arr)=>'<div class="opts">'+arr.map(([t,v])=>`<button class="opt ${l[f]===v?'on':''}" onclick="setF('${id}','${f}',${v})">${t}</button>`).join('')+'</div>';
+ openSheet(`<div class="msg">${esc(curMsg)}</div><div class="sub">1本、記録しました。振り返りは任意です。</div><h3>で、今回の1本はどうだった？😏</h3>${q('sat',[['うまかった！😆',1],['いつもどおり😗',2],['別にそうでもなかった😅',3]])}
+ <h3>大事に吸えたか？</h3>${q('mind',[['ちゃんと休憩して味わった',1],['ほぼ習慣で吸ってた',2],['吸わなくてもよかったかも',3]])}
+ <button class="ghost" onclick="closeSheet()">スキップ / とじる</button><button class="link" onclick="undo('${id}')">今の1本を取り消す</button>`)}
+function setF(id,f,v){const l=S.logs.find(x=>x.id===id);if(!l)return;l[f]=l[f]===v?null:v;save();reflect(id,true)}
+function waitSheet(m){clearInterval(tmr);openSheet(`<div class="msg">${esc(m||rmsg())}</div>
+ <button class="ok" onclick="closeSheet();nosmoke()">吸わずに休憩する</button>
+ <button class="smoke" style="min-height:56px;font-size:17px" onclick="closeSheet();waited()">ちょっと待ったけど、やっぱり吸う</button>
+ <button class="blue" id="tm" onclick="timer()">5分タイマーを使う（任意）</button>
+ <button class="ghost" onclick="waitSheet()">別のメッセージ</button><button class="link" onclick="closeSheet()">とじる（何も記録しない）</button>`)}
+function timer(){let s=300;const b=$('#tm');b.textContent='残り 5:00（閉じてもOK／アプリを開いたままにしてね）';clearInterval(tmr);
+ tmr=setInterval(()=>{s--;if(s<=0){clearInterval(tmr);b.textContent='5分たった。さて、どうする？😏';return}b.textContent='残り '+Math.floor(s/60)+':'+pad(s%60)},1000)}
+function waited(){lock=0;smoke(1)}
+
+function setupSheet(){openSheet(`<h2>はじめまして！</h2><div class="sub">まずは普段の本数と1箱の値段を教えてください。目標は最初は「同じ本数」にしてあります。あとから自由に変えられます。</div>
+ <label>普段1日に吸う本数の目安</label><input type="number" id="s_b" inputmode="numeric" value="15">
+ <label>1箱の値段（円）</label><input type="number" id="s_p" inputmode="numeric" value="600">
+ <label>1箱の本数</label><input type="number" id="s_n" inputmode="numeric" value="20">
+ <button class="ok" style="margin-top:14px" onclick="doSetup()">はじめる</button>`)}
+function doSetup(){const b=+$('#s_b').value,p=+$('#s_p').value,n=+$('#s_n').value;if(!(b>=0&&p>=0&&n>=1))return alert('数字を確認してください');
+ S.hist.baseline[0].val=b;S.hist.goal[0].val=b;S.hist.price[0].val=p;S.hist.size[0].val=n;S.setup=true;save();closeSheet()}
+
+const SAT={1:'うまかった',2:'いつもどおり',3:'そうでもなかった'};
+function rAna(){const D=byDay(),t=today(),days=Object.keys(D).sort(),g=val('goal',t),w=week(D),tot=totalSv(D);
+ let bars='';for(let i=6;i>=0;i--){const d=addDays(t,-i),o=D[d],gl=val('goal',d);
+  if(!o)bars+=`<div><i class="none"></i>—<br><span class="sub">${d.slice(5)}</span></div>`;
+  else{const mx=Math.max(10,gl+3,...Object.values(D).slice(-30).map(x=>x.s));bars+=`<div><b>${o.s}</b><i class="${o.s<=gl?'g':''}" style="height:${Math.round(o.s/mx*100)}px"></i><span class="sub">${d.slice(5)}</span></div>`}}
+ const ok=days.filter(d=>D[d].s<=val('goal',d)).length,nb=days.reduce((a,d)=>a+D[d].n,0),wt=days.reduce((a,d)=>a+D[d].w,0);
+ const sm=S.logs.filter(l=>l.k==='s'),sc={1:0,2:0,3:0},mc={1:0,2:0,3:0};sm.forEach(l=>{if(l.sat)sc[l.sat]++;if(l.mind)mc[l.mind]++});
+ const hb=[['深夜 0-4時',0,4],['早朝 5-8時',5,8],['午前 9-11時',9,11],['昼 12-13時',12,13],['午後 14-16時',14,16],['夕方 17-19時',17,19],['夜 20-23時',20,23]].map(([n,a,b])=>[n,sm.filter(l=>l.h>=a&&l.h<=b).length]);
+ const hm=Math.max(1,...hb.map(x=>x[1]));
+ const rw=[...S.rewards].sort((a,b)=>a.amt-b.amt).map(r=>`<div class="li"><span>${tot>=r.amt?'🎉':'⬜'} ${esc(r.text)}</span><span>${yen(r.amt)}${tot>=r.amt?'':'（あと'+yen(r.amt-tot)+'）'}</span></div>`).join('')||'<div class="sub">ご褒美は設定画面で登録できます</div>';
+ const recent=[...S.logs].sort((a,b)=>(b.d+b.t)<(a.d+a.t)?-1:1).slice(0,15).map(l=>`<div class="li"><span>${l.d.slice(5)} ${l.t} ${{s:l.w?'吸った（待ってから）':'吸った',n:'タバコなし休憩',z:'0本として記録'}[l.k]}${l.sat?'／'+SAT[l.sat]:''}</span><button onclick="delLog('${l.id}')">削除</button></div>`).join('')||'<div class="sub">まだ記録がありません</div>';
+ $('#ana').innerHTML=`<h1>📊 記録・分析</h1><button class="ghost" onclick="go('main')" style="margin-bottom:12px">← もどる</button>
+ <div class="card"><h2>過去7日（点線は記録なし）</h2><div class="bars">${bars}</div><div class="sub">緑＝その日の目標以内。0本と「記録なし」は別物として扱います。</div></div>
+ <div class="card"><h2>数字で見る</h2>
+ <div class="li"><span>7日間の平均</span><b>${w.avg===null?'—':w.avg.toFixed(1)+'本（'+w.n+'日分）'}</b></div>
+ <div class="li"><span>目標以内だった日</span><b>${ok} / ${days.length}日</b></div>
+ <div class="li"><span>タバコなし休憩</span><b>${nb}回</b></div>
+ <div class="li"><span>待ってから吸った回数</span><b>${wt}回</b></div>
+ <div class="li"><span>推定節約額の累計</span><b>${yen(tot)}</b></div><div class="sub" style="margin-top:6px">基準本数との差から計算した推定値です。実際に貯めた額ではありません。</div></div>
+ <div class="card"><h2>吸った後の満足度</h2><div class="sub">回答 ${sc[1]+sc[2]+sc[3]}件</div>${[1,2,3].map(v=>`<div class="li"><span>${SAT[v]}</span><b>${sc[v]}回</b></div>`).join('')}
+ <h3>大事に吸えた？</h3><div class="li"><span>ちゃんと味わった</span><b>${mc[1]}回</b></div><div class="li"><span>ほぼ習慣で吸ってた</span><b>${mc[2]}回</b></div><div class="li"><span>吸わなくてもよかったかも</span><b>${mc[3]}回</b></div></div>
+ <div class="card"><h2>時間帯別（吸った回数）</h2>${hb.map(([n,c])=>`<div class="hb"><span>${n}</span><i style="width:${Math.round(c/hm*100)}%;min-width:${c?4:0}px"></i>${c}</div>`).join('')}</div>
+ <div class="card"><h2>ご褒美</h2>${rw}</div>
+ <div class="card"><h2>最近の記録（間違いはここで削除）</h2>${recent}</div>`}
+function delLog(id){if(confirm('この記録を削除しますか？')){S.logs=S.logs.filter(l=>l.id!==id);save();render()}}
+
+function rSet(){const t=today(),lb=S.lastBackup?new Date(S.lastBackup).toLocaleString('ja-JP'):'まだありません';
+ $('#set').innerHTML=`<h1>⚙️ 設定</h1><button class="ghost" onclick="go('main')" style="margin-bottom:12px">← もどる</button>
+ <div class="card"><h2>目標と値段</h2><div class="sub">変更は「今日から」に反映され、過去の計算は書き換わりません。</div>
+ <label>基準本数（普段の本数・節約額の計算に使用）</label><input type="number" id="f_b" inputmode="numeric" value="${val('baseline',t)}">
+ <label>今日の目標本数（いつでも変更OK）</label><input type="number" id="f_g" inputmode="numeric" value="${val('goal',t)}">
+ <label>1箱の値段（円）</label><input type="number" id="f_p" inputmode="numeric" value="${val('price',t)}">
+ <label>1箱の本数</label><input type="number" id="f_n" inputmode="numeric" value="${val('size',t)}">
+ <button class="ok" style="margin-top:12px" onclick="saveSet()">保存</button></div>
+ <div class="card"><h2>ご褒美</h2><div id="rws">${S.rewards.map(r=>`<div class="rw"><input type="number" inputmode="numeric" value="${r.amt}" onchange="rwE('${r.id}','amt',this.value)"><input type="text" value="${esc(r.text)}" onchange="rwE('${r.id}','text',this.value)"><button onclick="rwD('${r.id}')">✕</button></div>`).join('')}</div>
+ <button class="ghost" onclick="rwA()">＋ ご褒美を追加</button></div>
+ <div class="card"><h2>バックアップと復元</h2><div class="sub">データはこのiPhoneのSafari内に保存されています。Safariのサイトデータ消去・プライベートブラウズ・長期間の未使用などで消えることがあります。定期的にJSONを保存してください。</div>
+ <div class="sub" style="margin:8px 0">最後のバックアップ：${lb}<br>記録 ${S.logs.length}件 ／ ご褒美 ${S.rewards.length}件</div>
+ <button onclick="expJ()">JSONバックアップを保存</button><button class="ghost" style="margin-top:8px" onclick="expC()">CSVで書き出し</button>
+ <h3>復元（JSONを読み込む）</h3><input type="file" id="fi" accept=".json,application/json">
+ <label><input type="radio" name="im" value="merge" checked> 追加する（今のデータは残す）</label><label><input type="radio" name="im" value="replace"> すべて置き換える</label>
+ <button class="blue" style="margin-top:8px" onclick="impStart()">読み込む</button></div>
+ <div class="card"><h2>データ全消去</h2><button class="ghost" onclick="wipeSheet()">全データを消去…</button></div>`}
+function saveSet(){const b=+$('#f_b').value,g=+$('#f_g').value,p=+$('#f_p').value,n=+$('#f_n').value;
+ if(!(b>=0&&g>=0&&p>=0&&n>=1)||$('#f_b').value===''||$('#f_g').value==='')return alert('数字を確認してください');
+ setHist('baseline',b);setHist('goal',g);setHist('price',p);setHist('size',n);save();toast('設定を保存しました',null);rSet()}
+function rwE(id,k,v){const r=S.rewards.find(x=>x.id===id);if(r){r[k]=k==='amt'?Math.max(0,+v||0):v.slice(0,60);save()}}
+function rwD(id){S.rewards=S.rewards.filter(r=>r.id!==id);save();rSet()}
+function rwA(){S.rewards.push({id:uid(),amt:10000,text:'新しいご褒美'});save();rSet()}
+
+function stamp(){const n=new Date();return n.getFullYear()+pad(n.getMonth()+1)+pad(n.getDate())+'-'+pad(n.getHours())+pad(n.getMinutes())}
+async function out(name,text,mime){const f=new File([text],name,{type:mime});
+ try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return true}}catch(e){if(e&&e.name==='AbortError')return false}
+ const u=URL.createObjectURL(new Blob([text],{type:mime})),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);return true}
+async function expJ(){const now=new Date().toISOString(),pre=S.lastBackup;S.lastBackup=now;
+ const ok=await out('genen-backup-'+stamp()+'.json',JSON.stringify({app:'genen',version:1,exportedAt:now,summary:{logs:S.logs.length,rewards:S.rewards.length},data:S},null,1),'application/json');
+ if(ok)save();else S.lastBackup=pre;render()}
+async function expC(){const k={s:'吸った',n:'タバコなし休憩',z:'0本として記録'},q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+ const rows=['日付,時刻,種類,待ってから吸った,満足度,味わえたか'].concat([...S.logs].sort((a,b)=>(a.d+a.t)<(b.d+b.t)?-1:1).map(l=>[l.d,l.t,k[l.k],l.w?'はい':'',l.sat?SAT[l.sat]:'',{1:'味わった',2:'習慣',3:'吸わなくてもよかった'}[l.mind]||''].map(q).join(',')));
+ await out('genen-log-'+stamp()+'.csv','\ufeff'+rows.join('\r\n'),'text/csv')}
+function impStart(){const f=$('#fi').files[0];if(!f)return alert('先にJSONファイルを選んでください');const mode=document.querySelector('input[name=im]:checked').value,r=new FileReader();
+ r.onerror=()=>alert('ファイルを読み込めませんでした。今のデータは変わっていません。');
+ r.onload=()=>{let o,c;try{o=JSON.parse(r.result);c=clean(o.data)}catch(e){c=null}
+  if(!c||o.app!=='genen')return alert('このファイルは読み込めません（壊れているか、このアプリのバックアップではありません）。今のデータは変わっていません。');
+  pending={c,mode};const ds=c.logs.map(l=>l.d).sort();
+  openSheet(`<h2>この内容を読み込みますか？</h2><div class="sub">バックアップ作成日：${o.exportedAt?new Date(o.exportedAt).toLocaleString('ja-JP'):'不明'}<br>記録 ${c.logs.length}件${ds.length?'（'+ds[0]+' 〜 '+ds[ds.length-1]+'）':''} ／ ご褒美 ${c.rewards.length}件</div>
+  <div class="msg" style="font-size:16px;margin-top:10px">${mode==='replace'?'⚠️ 今のデータをすべてこの内容に置き換えます（直前の状態は1回分だけ端末内に退避します）':'今のデータは残し、まだ無い記録だけ追加します'}</div>
+  <button class="${mode==='replace'?'smoke':'ok'}" style="min-height:52px;font-size:17px" onclick="impGo()">${mode==='replace'?'置き換える':'追加する'}</button><button class="ghost" onclick="closeSheet()">やめる</button>`)};
+ r.readAsText(f)}
+function impGo(){if(!pending)return;const{c,mode}=pending;
+ try{localStorage.setItem(KEY+'_prev',JSON.stringify(S))}catch(e){}
+ if(mode==='replace')S=c;else{const ids=new Set(S.logs.map(l=>l.id));c.logs.forEach(l=>{if(!ids.has(l.id))S.logs.push(l)})}
+ save();closeSheet();toast('読み込みました',null)}
+function wipeSheet(){openSheet(`<h2>全データを消去します</h2><div class="sub">記録・設定・ご褒美がすべて消えます。先にJSONバックアップを取ることをおすすめします。続けるなら下に「消去」と入力してください。</div><label>確認入力</label><input type="text" id="wp"><button class="smoke" style="min-height:52px;font-size:17px" onclick="wipe()">消去する</button><button class="ghost" onclick="closeSheet()">やめる</button>`)}
+function wipe(){if($('#wp').value!=='消去')return alert('「消去」と入力してください');
+ try{localStorage.setItem(KEY+'_prev',JSON.stringify(S))}catch(e){}S=def();save();closeSheet();go('main')}
+
+S=load();try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+try{localStorage.setItem('_t','1');localStorage.removeItem('_t')}catch(e){saveErr=true}
+render();
+setInterval(()=>{if(lastDay!==today())render()},30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&lastDay!==today())render()});
+</script></body></html>
